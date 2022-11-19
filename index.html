@@ -1,0 +1,17 @@
+---
+layout: default
+---
+
+<div id="home">
+  <p>I am someshC8I (<span> 🔉 </span>`somesh C 8 I` or just `somesh`) tech-lead at <a
+      href="https://twitter.com/rep3gg">rep3gg</a>,
+    building a composable credentialing infrastructure for decentralized communities</p>
+  <p>Interested in smart contract security, decentralized applications and
+    building scalable infrastructure.</p>
+  </br>
+  <ul class="posts">
+    {% for post in site.posts %}
+    <li><span>{{ post.date | date_to_string }}</span> &raquo; <a href="{{ post.url }}">{{ post.title }}</a></li>
+    {% endfor %}
+  </ul>
+</div>
