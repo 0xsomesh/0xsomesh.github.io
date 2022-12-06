@@ -47,9 +47,65 @@ EIP-4337 implements account abstraction by having a different mem-pool. Here are
 
 * This mempool is operator by the existing nodes or a new class of operators called `bundlers`. They form the bundles of user operations and send them to the mem-pool for inclusion in the blockchain
 
-* Every UserOp is processed by a special smart contract called `Entry Point` which is responsible for authentications, execution of the operation and giving out gas rewards to the bundler
+* Every UserOp is processed by a special smart contract called `Entry Point` which is responsible for authentications, execution of the operation and giving out gas rewards to the bundler.
 
 * gas fees are typically collected from the `sender` address after validating `signature`. `sender` is the smart contract wallet
 
-Okay that's it for today. Rest later. 
+
+## Let's talk about how the accounts are created in the first place
+
+Since these accounts are smart contracts and smart contract creation requires gas fees which is deducted from the account balance. How can a bundler take gas fees from the account that is being created and is essentially empty.
+
+Answer to that is in *deterministic addresses* using EIP-2470. Cutting it short using a you load up the some balance in the address which can be calculated using
+
+```javascript
+address(keccak256(bytes1(0xff), 0xce0042B868300000d44A59004Da54A005ffdcf9f, _salt, keccak256(_code)) << 96)
+```
+
+more details in the eip referenced above. You can calculate the address before sending the UserOp to initialize wallet and set it as sender with initCode for initialization params. 
+
+
+## Zephyr wallet
+
+With zephyr we wanted to create a wallet keeping security features at the top priority. 
+
+Zephyr wallet had features like
+- dead man switch
+- social recovery
+- session management
+- access controls
+
+Aim was to create a wallet where with more granular access controls
+
+- You can provide partial access to some wallet to trade on an AMM Swap on your behalf for certain period of time
+
+- After the dead man switch is activated, the new owner should not be able to impersonate the user completely
+
+- custom rules for session keys
+
+### customized security startegies
+a social check before every transaction which can be customized as per the user
+
+[zephyr contracts](https://github.com/ethCadets/secure-wallet-contracts)
+
+Not all of it was implemented as there was a time limit.
+
+
+## Resources
+
+- [eth-infinitism github with implementations of core contracts required in AA, bundler to realay UserOp and a client side sdk to create UserOps ](https://github.com/eth-infinitism/)
+
+- [Ethereum Foundation's video on ERC-4337](https://www.youtube.com/watch?v=xHWlJiL_iZA)
+
+- [Unpacking ERC4337](https://frontier.tech/unpacking-erc-4337)
+
+- [Soul Wallet protocol](https://github.com/proofofsoulprotocol)
+
+- [porton wallet](https://github.com/nanjiangwill/porton-wallet)
+
+
+
+
+
+
 
