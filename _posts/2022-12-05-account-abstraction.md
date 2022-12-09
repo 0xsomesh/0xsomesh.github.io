@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Account abstraction"
+title:  "Notes on Account abstraction"
 date:   2022-12-05 16:08:31 +0530
 ---
 
