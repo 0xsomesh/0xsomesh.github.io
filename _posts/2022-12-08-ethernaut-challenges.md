@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "OZ's ethernaut challenges"
-date:   2022-12-09 16:08:31 +0530
+date:   2022-12-08 16:08:31 +0530
 ---
 
 Exploits and explanations of ethernaut solutions as of Decemeber 2022.
