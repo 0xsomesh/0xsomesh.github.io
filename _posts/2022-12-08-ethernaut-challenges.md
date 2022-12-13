@@ -310,4 +310,117 @@ This level is tricky, especially the gate number 1 and still wip. Will fill in t
 
 ## gatekeepertwo
 
+The goal is set entrant as the player's address via `enter`, which is protected by three modifiers or gates. Let's talk about each one of them individually
+
+`gateOne` => To clear this gate `msg.sender` and `msg.origin` should be different, meaning the call should come from a smart contract rather than EOA. 
+
+`gateTwo` => To clear this gate the code size of the smart contract calling this function should be zero. Smart contract at the time of creation do not have code stored in the blockchain. It's only after the constructor call is done, smart contract have a runtime bytecode. We should trigger the function during the creation step.
+
+`gateThree` => This gate looks tricky but actually is not. RHS is just 0x111...11 (32 bytes) the max value of uint256. LHS is bitwise OR of `_gateKey` typecasted as `uint64` and some operation of `msg.sender` which can be calculated easily.
+
+- Things to note here is that msg.sender is the smart contract not the player's address
+
+Let's do some maths, assume the equation is `a ^ b == c` where `c` is 1111 (4 bits instead of 64*8) and `a` is known.
+we need `b` such that the above equation is true. `XOR` operation (`^`) gets 1 if exactly one  of the two values are 1, which means if `a` is 0101, `b` should be 1010, if `a` is 0000 `b` should be `1111`. Conclusion `b` has to be flipped bits of `a` which is a bitwise not operation.
+
+Since `b` in `uint64(_gateKey`) we can set it as the `~a` (NOT operator)
+
+```solidity
+contract GatekeeperTwoHack {
+  constructor(address instance) {
+    bytes8 _gateKey = ~bytes8(keccak256(abi.encodePacked(address(this))));
+    GatekeeperTwo gatekeeper = GatekeeperTwo(instance);
+    gatekeeper.enter(_gateKey);
+  }
+}
+```
+Simply deploy this contract to clear the level
+
+---
+
+## naught coin
+
+The contract inherits OZ's ERC20 meaning all the public functions are available to us. There are two ways to transfer in ERC-20
+- via `transfer` funtion which is blocked via modifier
+- via `transferFrom` which is can be triggered by some address (spender) with the appropriate allowance and as we can see there is no checks on `approve` and `transferFrom`. We can exploit the contract using this.
+
+Give allowance of all the tokens to an address or a contract and trigger `transferFrom`
+
+```solidity
+ contract NaughtCoinHack {
+  
+  function transfer(address instance) public {
+    NaughtCoin coin = NaughtCoin(instance);
+    uint256 INITIAL_SUPPLY = 1000000 * (10**uint256(18));
+    coin.transferFrom(msg.sender, address(this), INITIAL_SUPPLY);
+  }
+}
+```
+
+```javascript
+let tx = await naughtCoin.approve(naughtCoinHack.address, hre.ethers.utils.parseEther("1000000"));
+await tx.wait();
+tx = await naughtCoinHack.transfer(INSTANCE_ADDRESS);
+await tx.wait();
+console.log(await naughtCoin.balanceOf(owner.address));
+```
+
+---
+
+## preservation
+
+Interesting challenge!
+
+The goal is simple, to take the ownership of the contract. We see two public functions `setFirstTime` and `setSecondTime`, both delegating calls to `LibraryContract`. As we know delegate calls are executed in the context of calling of contract (Delegation challenge above) and it poses a risk of storage manipulation.
+
+In `Preservation` contract first storage slot is occupied by `timeZone1Library` address and in the `LibraryContract` first slot in `storedTime` which can be set by `setTime`.
+
+Delegating `setTime` from `Preservation` contract changes the first slot of the `Preservation`, meaning we can store anything there. This gives a hint that if we can store anything in the first slot using a poorly written contract and a delegate call, we can also change slot 3 which is `owner` using similar techniques. To clear this level we need to 
+
+- inject a custom smart contract address in the first slot and make it `timeZone1Library`
+- the custom smart contract should have a setTime function 
+- then call `setFirstTime` and update the third slot with player's address
+
+```solidity
+contract LibraryContractHack {
+    // stores a timestamp
+    uint256 dummya;
+    uint256 dummyb;
+    uint256 storedTime;
+
+    function setTime(uint256 _time) public {
+        storedTime = _time;
+    }
+}
+```
+
+This contract is using 3 storage slots and `setTime` is manipulating the third one which is owner in `Preservation`. Instead of using js, I simply created a new contract to make the contract calls (I hate doing type manipulation in javascript)
+
+```solidity
+contract PreservationHack {
+    Preservation preservation;
+
+    constructor(address instance) {
+        preservation = Preservation(instance);
+        LibraryContractHack libHack = new LibraryContractHack();
+        preservation.setFirstTime(uint256(uint160(address(libHack))));
+        preservation.setFirstTime(uint256(uint160(msg.sender)));
+    }
+}
+```
+
+Deploying this contract will clear the level. Things to notice here is that addresses needs to be typecasted in uint256 both times, for obvious reasons and since all this happens in a single transaction we didn't even need `setSecondTime`
+
+---
+
+## recovery
+
+This is way too easy. Get the newly created contract address from the transaction of creating new level instance using some transaction explorer (etherscan) and trigger `destroy`
+
+```javascript
+const tx = await simpleToken.destroy(owner.address);
+await tx.wait()
+```
+
+
 
