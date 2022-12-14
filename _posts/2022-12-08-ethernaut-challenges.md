@@ -422,5 +422,68 @@ const tx = await simpleToken.destroy(owner.address);
 await tx.wait()
 ```
 
+---
+
+## magic number
+
+This one is interesting. **What is the meaning of life** is a reference from the book Hitchhiker's guide to galaxy or h2g2 for short. Problem is simple, create a contract which returns `42` and has 10 bytes at max.
+
+Resources that helped me
+- [EVM: From Solidity to byte code, memory and storage](https://www.youtube.com/watch?v=RxL_1AfV7N4)
+- [Deconstructing a Solidity Contract](https://blog.openzeppelin.com/deconstructing-a-solidity-contract-part-i-introduction-832efd2d7737/)
+- [evm.codes](https://www.evm.codes/)
+
+In solidity this might be the simplistic solution, even this has 90 instructions! Try compiling it in remix
+```solidity
+contract Solve {
+    function solve () external returns(uint256) {
+        return 42;
+    }
+}
+```
+
+We need to manually write the contract
+
+```solidity
+// storing 42 in memory...
+
+PUSH1(0x60) 0x2a  -> 0x602a // push 42 in stack
+PUSH1(0x60) 0x80  -> 0x6080 // push a location for 42 to be stored
+MSTORE(0x52)      -> 0x52 // store 42 in 0x80
+
+// returning 42 from memory...
+
+PUSH1(0x60) 0x20  -> 0x6020 // push length of the return value (32 bytes)
+PUSH1(0x60) 0x80  -> 0x6080 // push location of the return value
+RETURN(0xf3)      -> 0xf3 // return 42
+
+0x602a60805260206080f3 // runtime opcodes
+```
+
+Next part is to deploy this contract. constructor call returns the runtime opcodes while creating a contract.
+
+```solidity
+contract MagicNumHack {
+    constructor() public {
+        assembly {
+            mstore(0x00, 0x602a60805260206080f3) // store the runtime opcodes in memory location 0x00
+            return(0x16, 0x0a) // return the runtime opcodes with parameters offset and size
+        }
+    }
+}
+```
+
+```javascript
+const MagicNumHack = await hre.ethers.getContractFactory("MagicNumHack");
+const magicHack = await MagicNumHack.deploy();
+await magicHack.deployed();
+
+await magic.setSolver(magicHack.address)
+```
+
+Phew!
+
+---
+
 
 
