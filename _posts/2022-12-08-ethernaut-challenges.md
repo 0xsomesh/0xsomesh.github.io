@@ -663,7 +663,6 @@ contract SwappableTokenTwoHack is ERC20 {
 ```
 
 - deploy  `SwappableTokenTwoHack` and transfer 10 to dex and 10 to player initially
-- 
 
 ```javascript
 let SwappableTokenTwoHack = await hre.ethers.getContractFactory("SwappableTokenTwoHack");
