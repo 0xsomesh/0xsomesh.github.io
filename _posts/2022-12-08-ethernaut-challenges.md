@@ -779,7 +779,9 @@ await tx.wait();
 
 ## double entry point
 
-This challenge has a bunch of contracts. After enough staring, I understood what's happening and checking the validation code from ethernaut's repository. Clearing this challenge was pretty easy. Create a Bot which raises alert regardless of the call and that's it.
+This challenge has a bunch of contracts. After enough staring, I understood what's happening and after checking the validation code from ethernaut's repository, clearing this challenge was pretty easy. 
+
+Create a Bot which raises alert regardless of the call and that's it.
 
 ```solidity
 contract Bot is IDetectionBot {
