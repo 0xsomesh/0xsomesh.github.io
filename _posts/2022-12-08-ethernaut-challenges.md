@@ -775,5 +775,32 @@ tx = await engine.upgradeToAndCall(engineHack.address, EngineHack.interface.enco
 await tx.wait();
 ```
 
+--- 
+
+## double entry point
+
+This challenge has a bunch of contracts. After enough staring, I understood what's happening and checking the validation code from ethernaut's repository. Clearing this challenge was pretty easy. Create a Bot which raises alert regardless of the call and that's it.
+
+```solidity
+contract Bot is IDetectionBot {
+    function handleTransaction(address user, bytes calldata msgData) external {
+        Forta forta = Forta(msg.sender);
+        forta.raiseAlert(user);
+    }
+}
+```
+
+```javascript
+const Bot = await hre.ethers.getContractFactory("Bot");
+bot = await Bot.deploy()
+await bot.deployed();
+
+dep = DoubleEntryPoint.attach(INSTANCE_ADDRESS);
+forta = Forta.attach(await dep.forta());
+
+tx = await forta.setDetectionBot(bot.address); 
+await tx.wait()
+```
+
 
 
