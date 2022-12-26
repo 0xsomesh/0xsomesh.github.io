@@ -4,7 +4,7 @@ title:  "OZ's ethernaut challenges"
 date:   2022-12-08 16:08:31 +0530
 ---
 
-Exploits and explanations of ethernaut solutions as of Decemeber 2022.
+Exploits and explanations of ethernaut solutions as of Decemeber 2022. Checkout the code at [my solution's repo](https://github.com/someshc8i/ethernaut)
 
 P.S. Do not expect detailed description. You can most probably find articles with in-depth details out there somwhere.
 
