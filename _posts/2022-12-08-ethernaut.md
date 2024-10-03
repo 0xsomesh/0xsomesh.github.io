@@ -1,7 +1,8 @@
 ---
 layout: post
-title:  "OZ's ethernaut challenges"
+title:  "Killing time with Ethernaut challenges | Solutions"
 date:   2022-12-08 16:08:31 +0530
+is_post: True
 ---
 
 Exploits and explanations of ethernaut solutions as of Decemeber 2022. Checkout the code at [my solution's repo](https://github.com/someshc8i/ethernaut)

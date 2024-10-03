@@ -2,6 +2,7 @@
 layout: post
 title:  "Notes on Account abstraction"
 date:   2022-12-05 16:08:31 +0530
+is_post: True
 ---
 
 I did a little exploration of Account abstraction for a project in ETH-India 2022. We called it zephyr wallet. This post covers some interesting research and resources on Account abstraction.

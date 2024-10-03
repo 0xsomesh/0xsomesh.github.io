@@ -19,15 +19,17 @@
 # in the templates via {{ site.myvariable }}.
 
 
-title: someshC8I
-email: someshc8i@protonmail.com
+# title: 0xsomesh
+email: 0xsomesh@gmail.com
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "" # the base hostname & protocol for your site, e.g. http://example.com
-twitter_username: someshc8i
-github_username:  someshc8i
+twitter_username: 0xsomesh
+github_username:  0xsomesh
 
 # Build settings
 theme: minima
+minima:
+  skin: dark
 # plugins:
 #   - jekyll-feed
 

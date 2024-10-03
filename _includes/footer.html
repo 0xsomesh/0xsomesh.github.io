@@ -22,10 +22,13 @@
         </div>
   
         <div class="footer-col footer-col-2">
-          {%- include social.html -%}
+          <ul class="social-media-list" style="display: flex; justify-content: space-around">
+            <li style="padding-top: 5px;"><a href="https://github.com/0xsomesh"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg></a></li>
+            <li><a href="https://www.linkedin.com/in/somesh-chaturvedi"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#linkedin"></use></svg></a></li>
+            <li><a href="https://www.twitter.com/0xsomesh"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg></a></li></ul>
         </div>
   
-        <div class="footer-col footer-col-3">
+        <div class="footer-col footer-col-3" style="display: flex">
           <p>{{- site.description | escape -}}</p>
         </div>
       </div>
