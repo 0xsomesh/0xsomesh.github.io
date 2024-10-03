@@ -847,7 +847,7 @@ await tx.wait()
 --- 
 ---
 
-Thanks for reading. Hmu [@0xsomesh](https://twitter.com/someshc8i) if you would like to discuss security, get a second opinion on a smart contract or any doubts regarding the ethernaut challenges and my solutions. Happy hacking!
+Thanks for reading. Hmu [@0xsomesh](https://twitter.com/0xsomesh) if you would like to discuss security, get a second opinion on a smart contract or any doubts regarding the ethernaut challenges and my solutions. Happy hacking!
 
 
 
