@@ -5,7 +5,7 @@ date:   2022-12-08 16:08:31 +0530
 is_post: True
 ---
 
-Exploits and explanations of ethernaut solutions as of Decemeber 2022. Checkout the code at [my solution's repo](https://github.com/someshc8i/ethernaut)
+Exploits and explanations of ethernaut solutions as of Decemeber 2022. Checkout the code at [my solution's repo](https://github.com/0xsomesh/ethernaut)
 
 P.S. Do not expect detailed description. You can most probably find articles with in-depth details out there somwhere.
 
@@ -847,7 +847,7 @@ await tx.wait()
 --- 
 ---
 
-Thanks for reading. Hmu [@someshc8i](https://twitter.com/someshc8i) if you would like to discuss security, get a second opinion on a smart contract or any doubts regarding the ethernaut challenges and my solutions. Happy hacking!
+Thanks for reading. Hmu [@0xsomesh](https://twitter.com/someshc8i) if you would like to discuss security, get a second opinion on a smart contract or any doubts regarding the ethernaut challenges and my solutions. Happy hacking!
 
 
 
