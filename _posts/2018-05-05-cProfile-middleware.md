@@ -7,8 +7,8 @@ is_project: True
 
 Django cProfile middleware with configurable triggers and outputs
 
-<a href="https://github.com/0xsomesh/customizable-django-profiler">github</a>
 
+[Gtihub](https://github.com/0xsomesh/customizable-django-profiler)
 
 
 
