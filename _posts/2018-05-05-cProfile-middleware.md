@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "cProfile middleware for Django"
+title:  "cProfile middleware for Django | Weekend project"
 date:   2018-05-05 16:08:31 +0530
 is_project: True
 ---
