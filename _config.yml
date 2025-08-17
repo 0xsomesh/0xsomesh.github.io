@@ -30,8 +30,13 @@ github_username:  0xsomesh
 theme: minima
 # minima:
 #   skin: dark
-# plugins:
-#   - jekyll-feed
+plugins:
+  - jekyll-feed
+
+# MathJax configuration
+markdown: kramdown
+kramdown:
+  math_engine: mathjax
 
 # Exclude from processing.
 # The following items will not be processed, by default.
