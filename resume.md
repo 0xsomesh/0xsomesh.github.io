@@ -15,7 +15,7 @@ Engineer (backend, ai) and 1x founder with 7+ years of work ex. 👋
 
 *Dec 2024 - present*
 
-- Built AI agent for investment research (LangGraph) with multi-step reasoning, search, and RAG—handling ~1K messages/day from 300-400 DAUs
+- Built AI agent for investment research (LangGraph) with multi-step reasoning, search, and RAG—handling ~2K messages/day from over 500 DAUs
 
 - Integrated internal tools for live market and user context, enabling agents to perform portfolio and investment analysis
 
